@@ -34,6 +34,13 @@ export const IconoMas = ({ className = "size-6" }: P) => (
   </svg>
 );
 
+export const IconoSubir = ({ className = "size-7" }: P) => (
+  <svg {...svg} className={className}>
+    <path d="M12 15V3M7 8l5-5 5 5" />
+    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+  </svg>
+);
+
 export const IconoChevron = ({ className = "size-5" }: P) => (
   <svg {...svg} className={className}>
     <path d="m6 9 6 6 6-6" />

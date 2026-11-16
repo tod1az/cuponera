@@ -9,16 +9,22 @@ type Props = { secreto: Secreto | undefined; grande?: boolean };
 
 /**
  * Mobile: un botón que copia código y luego clave (ambos quedan en el
- * historial del teclado). Desktop: dos botones independientes.
+ * historial del teclado), más los dos botones por separado para quien no
+ * tiene historial de portapapeles (p. ej. iOS). Desktop: solo los dos botones.
  */
 export function BotonesCopiar({ secreto, grande = false }: Props) {
   const tactil = useEsTactil();
-  return tactil ? (
-    <CopiarAmbos secreto={secreto} grande={grande} />
-  ) : (
+  const separados = (
     <div className="grid grid-cols-2 gap-2">
-      <CopiarUno etiqueta="código" valor={secreto?.codigo} grande={grande} />
-      <CopiarUno etiqueta="clave" valor={secreto?.clave} grande={grande} />
+      <CopiarUno etiqueta="código" valor={secreto?.codigo} grande={grande} secundario={tactil} />
+      <CopiarUno etiqueta="clave" valor={secreto?.clave} grande={grande} secundario={tactil} />
+    </div>
+  );
+  if (!tactil) return separados;
+  return (
+    <div className="flex flex-col gap-2">
+      <CopiarAmbos secreto={secreto} grande={grande} />
+      {separados}
     </div>
   );
 }
@@ -93,10 +99,13 @@ function CopiarUno({
   etiqueta,
   valor,
   grande,
+  secundario = false,
 }: {
   etiqueta: string;
   valor: string | undefined;
   grande: boolean;
+  /** En mobile van bajo el botón principal, con menos peso visual. */
+  secundario?: boolean;
 }) {
   const [ok, setOk] = useTemporal(false);
   return (
@@ -109,9 +118,11 @@ function CopiarUno({
         } else toast.error("No se pudo copiar al portapapeles");
       }}
       disabled={!valor}
-      className={`${base} ${tam(grande)} bg-acento text-sobre-acento`}
+      className={`${base} ${secundario ? "h-11 text-sm" : tam(grande)} ${
+        secundario ? "border border-borde bg-superficie-2" : "bg-acento text-sobre-acento"
+      }`}
     >
-      {ok ? <IconoCheck /> : <IconoCopiar />}
+      {ok ? <IconoCheck className="size-4" /> : <IconoCopiar className="size-4" />}
       {ok ? "Copiado" : `Copiar ${etiqueta}`}
     </button>
   );

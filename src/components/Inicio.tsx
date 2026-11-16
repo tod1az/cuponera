@@ -3,6 +3,7 @@ import { useAuthActions } from "@convex-dev/auth/react";
 import { useMemo } from "react";
 import { api } from "../../convex/_generated/api";
 import { agruparPorTramo } from "../lib/datos";
+import { useEsTactil } from "../lib/useEsTactil";
 import { useSecretos } from "../lib/useSecretos";
 import { CuponeraCard } from "./CuponeraCard";
 import { ImportarPdf } from "./ImportarPdf";
@@ -13,6 +14,7 @@ export function Inicio() {
   const cuponeras = useQuery(api.pasajes.listar);
   const yo = useQuery(api.users.yo);
   const { signOut } = useAuthActions();
+  const tactil = useEsTactil();
 
   const tramos = useMemo(() => agruparPorTramo(cuponeras ?? []), [cuponeras]);
   const idsSinUsar = useMemo(
@@ -62,7 +64,11 @@ export function Inicio() {
       {cuponeras === undefined ? (
         <Esqueleto />
       ) : cuponeras.length === 0 ? (
-        <Vacio />
+        tactil ? (
+          <Vacio />
+        ) : (
+          <ImportarPdf modo="dropzone" />
+        )
       ) : (
         <>
           <section aria-labelledby="proximos" className="flex flex-col gap-4">
@@ -85,7 +91,7 @@ export function Inicio() {
         </>
       )}
 
-      <ImportarPdf />
+      {!(cuponeras?.length === 0 && !tactil) && <ImportarPdf />}
     </div>
   );
 }

@@ -5,20 +5,33 @@ import { api } from "../../convex/_generated/api";
 import { clp, mensajeError } from "../lib/datos";
 import { parsearTurbus, type CuponeraParseada } from "../lib/parseTurbus";
 import { extraerTextoPdf } from "../lib/pdfTexto";
-import { IconoFlecha, IconoMas } from "./Iconos";
+import { IconoFlecha, IconoMas, IconoSubir } from "./Iconos";
 
-/** Botón flotante + hoja inferior con la vista previa antes de guardar. */
-export function ImportarPdf() {
+const esPdf = (f: File) => f.type === "application/pdf" || /\.pdf$/i.test(f.name);
+
+/**
+ * Importa el comprobante PDF y muestra una vista previa antes de guardar.
+ * - "boton": botón flotante (mobile, o desktop con cuponeras).
+ * - "dropzone": zona para arrastrar el PDF (desktop sin cuponeras).
+ */
+export function ImportarPdf({ modo = "boton" }: { modo?: "boton" | "dropzone" }) {
   const importar = useAction(api.secretos.importar);
   const input = useRef<HTMLInputElement>(null);
   const [leyendo, setLeyendo] = useState(false);
   const [guardando, setGuardando] = useState(false);
   const [previa, setPrevia] = useState<CuponeraParseada | null>(null);
 
-  async function onArchivo(e: React.ChangeEvent<HTMLInputElement>) {
+  function onArchivo(e: React.ChangeEvent<HTMLInputElement>) {
     const archivo = e.target.files?.[0];
     e.target.value = "";
-    if (!archivo) return;
+    if (archivo) void procesar(archivo);
+  }
+
+  async function procesar(archivo: File) {
+    if (!esPdf(archivo)) {
+      toast.error("El archivo debe ser un PDF");
+      return;
+    }
     setLeyendo(true);
     try {
       const texto = await extraerTextoPdf(archivo);
@@ -53,14 +66,18 @@ export function ImportarPdf() {
         className="hidden"
         onChange={onArchivo}
       />
-      <button
-        onClick={() => input.current?.click()}
-        disabled={leyendo}
-        className="fixed right-4 bottom-[max(env(safe-area-inset-bottom),1rem)] z-10 flex h-14 items-center gap-2 rounded-2xl bg-acento pr-5 pl-4 font-semibold text-sobre-acento shadow-lg shadow-black/20 transition active:scale-95 disabled:opacity-70"
-      >
-        <IconoMas />
-        {leyendo ? "Leyendo PDF…" : "Importar PDF"}
-      </button>
+      {modo === "dropzone" ? (
+        <Dropzone leyendo={leyendo} onArchivo={procesar} onClick={() => input.current?.click()} />
+      ) : (
+        <button
+          onClick={() => input.current?.click()}
+          disabled={leyendo}
+          className="fixed right-4 bottom-[max(env(safe-area-inset-bottom),1rem)] z-10 flex h-14 items-center gap-2 rounded-2xl bg-acento pr-5 pl-4 font-semibold text-sobre-acento shadow-lg shadow-black/20 transition active:scale-95 disabled:opacity-70"
+        >
+          <IconoMas />
+          {leyendo ? "Leyendo PDF…" : "Importar PDF"}
+        </button>
+      )}
 
       {previa && (
         <HojaPrevia
@@ -71,6 +88,78 @@ export function ImportarPdf() {
         />
       )}
     </>
+  );
+}
+
+function Dropzone({
+  leyendo,
+  onArchivo,
+  onClick,
+}: {
+  leyendo: boolean;
+  onArchivo: (f: File) => void;
+  onClick: () => void;
+}) {
+  const [encima, setEncima] = useState(false);
+  // Contador: dragenter/dragleave también se disparan al pasar sobre los hijos.
+  const profundidad = useRef(0);
+
+  // Evita que el navegador abra el PDF si se suelta fuera de la zona.
+  useEffect(() => {
+    const evitar = (e: DragEvent) => e.preventDefault();
+    window.addEventListener("dragover", evitar);
+    window.addEventListener("drop", evitar);
+    return () => {
+      window.removeEventListener("dragover", evitar);
+      window.removeEventListener("drop", evitar);
+    };
+  }, []);
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={leyendo}
+      onDragEnter={(e) => {
+        e.preventDefault();
+        profundidad.current++;
+        setEncima(true);
+      }}
+      onDragOver={(e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = "copy";
+      }}
+      onDragLeave={() => {
+        profundidad.current--;
+        if (profundidad.current <= 0) setEncima(false);
+      }}
+      onDrop={(e) => {
+        e.preventDefault();
+        profundidad.current = 0;
+        setEncima(false);
+        const archivo = e.dataTransfer.files[0];
+        if (archivo) onArchivo(archivo);
+      }}
+      className={`mt-8 flex w-full flex-col items-center gap-4 rounded-3xl border-2 border-dashed px-8 py-16 text-center transition ${
+        encima ? "border-acento bg-acento/10" : "border-borde bg-superficie hover:border-tenue"
+      } disabled:opacity-70`}
+    >
+      <span className="grid size-14 place-items-center rounded-2xl bg-acento/15 text-acento">
+        <IconoSubir />
+      </span>
+      <span>
+        <span className="block text-lg font-semibold">
+          {leyendo
+            ? "Leyendo PDF…"
+            : encima
+              ? "Suelta el PDF aquí"
+              : "Arrastra el comprobante PDF de Turbus"}
+        </span>
+        <span className="mt-1 block text-sm text-tenue">
+          o haz clic para elegir el archivo. El PDF se lee en tu navegador y no se sube.
+        </span>
+      </span>
+    </button>
   );
 }
 

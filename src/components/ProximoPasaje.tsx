@@ -3,7 +3,6 @@ import { fecha } from "../lib/datos";
 import { useMarcarUsado } from "../lib/useMarcarUsado";
 import { BotonesCopiar } from "./BotonesCopiar";
 import { IconoCheck, IconoFlecha } from "./Iconos";
-import { Secretos } from "./Secretos";
 
 type Props = { tramo: Tramo; secretos: ReadonlyMap<string, Secreto> };
 
@@ -38,7 +37,6 @@ export function ProximoPasaje({ tramo, secretos }: Props) {
           <p className="mt-1 text-sm text-tenue">
             Cupón {proximo.indice} · cuponera del {fecha(proximo.cuponera.creadaEn)}
           </p>
-          <Secretos secreto={secretos.get(proximo._id)} className="mt-4" />
           <div className="mt-4 flex flex-col gap-2">
             <BotonesCopiar secreto={secretos.get(proximo._id)} grande />
             <button
