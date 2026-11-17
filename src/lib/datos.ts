@@ -33,14 +33,16 @@ export function agruparPorTramo(cuponeras: Cuponera[]): Tramo[] {
     }
   }
   for (const t of tramos.values()) {
-    t.disponibles.sort(
-      (a, b) => a.cuponera.creadaEn - b.cuponera.creadaEn || a.indice - b.indice,
-    );
+    t.disponibles.sort((a, b) => a.cuponera.creadaEn - b.cuponera.creadaEn || a.indice - b.indice);
   }
   return [...tramos.values()];
 }
 
-const fmtFecha = new Intl.DateTimeFormat("es-CL", { day: "numeric", month: "short", year: "numeric" });
+const fmtFecha = new Intl.DateTimeFormat("es-CL", {
+  day: "numeric",
+  month: "short",
+  year: "numeric",
+});
 const fmtFechaHora = new Intl.DateTimeFormat("es-CL", {
   day: "numeric",
   month: "short",

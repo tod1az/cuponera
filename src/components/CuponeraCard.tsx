@@ -1,8 +1,8 @@
 import { useMutation } from "convex/react";
 import { useState } from "react";
-import { toast } from "sonner";
 import { api } from "../../convex/_generated/api";
 import type { Cuponera, Pasaje, Secreto } from "../lib/datos";
+import { aviso } from "../lib/avisos";
 import { clp, fecha, fechaHora, mensajeError } from "../lib/datos";
 import { useMarcarUsado } from "../lib/useMarcarUsado";
 import { Alerta } from "./Alerta";
@@ -25,33 +25,39 @@ export function CuponeraCard({ cuponera, secretos }: Props) {
     setEliminando(true);
     try {
       await eliminar({ cuponeraId: cuponera._id });
-      toast.success("Cuponera eliminada");
-      setConfirmando(false);
+      aviso({
+        texto: "Cuponera eliminada",
+        detalle: `${cuponera.origen} ⇄ ${cuponera.destino}, comprada el ${fecha(cuponera.creadaEn)}`,
+      });
     } catch (e) {
-      toast.error(mensajeError(e));
-    } finally {
+      aviso.error("No se pudo eliminar la cuponera", mensajeError(e));
       setEliminando(false);
+      setConfirmando(false);
     }
   }
 
   return (
     <>
-      <details className="group rounded-2xl border border-borde bg-superficie open:shadow-sm">
+      <details className="group rounded-2xl border border-borde bg-superficie">
         <summary className="flex cursor-pointer items-center gap-3 p-4">
           <div className="min-w-0 flex-1">
-            <p className="flex items-center gap-1.5 font-semibold">
-              {cuponera.empresa} · {cuponera.origen}
-              <span className="text-tenue">⇄</span>
-              {cuponera.destino}
+            <p className="font-display text-xl leading-tight font-semibold">
+              {cuponera.origen} ⇄ {cuponera.destino}
             </p>
             <p className="mt-0.5 text-sm text-tenue">
-              {fecha(cuponera.creadaEn)} · {usados}/{total} usados
+              Comprada el {fecha(cuponera.creadaEn)}.{" "}
+              {terminada ? "Todos usados" : `${usados} de ${total} usados`}
             </p>
-            <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-superficie-2">
-              <div
-                className={`h-full rounded-full ${terminada ? "bg-tenue" : "bg-acento"}`}
-                style={{ width: `${(usados / total) * 100}%` }}
-              />
+            {/* Un segmento por pasaje, en orden: ámbar disponible, apagado usado. */}
+            <div className="mt-2.5 flex gap-1" aria-hidden>
+              {cuponera.pasajes.map((p) => (
+                <span
+                  key={p._id}
+                  className={`h-1.5 flex-1 rounded-full ${
+                    p.usadoEn === null ? "bg-acento" : "bg-superficie-2"
+                  }`}
+                />
+              ))}
             </div>
           </div>
           <IconoChevron className="size-5 shrink-0 text-tenue transition group-open:rotate-180" />
@@ -110,7 +116,6 @@ export function CuponeraCard({ cuponera, secretos }: Props) {
 function FilaPasaje({ pasaje, secreto }: { pasaje: Pasaje; secreto: Secreto | undefined }) {
   const marcar = useMarcarUsado();
   const usado = pasaje.usadoEn !== null;
-  const etiqueta = `Cupón ${pasaje.indice}`;
 
   return (
     <li className={`px-4 py-3 ${usado ? "opacity-60" : ""}`}>
@@ -124,7 +129,7 @@ function FilaPasaje({ pasaje, secreto }: { pasaje: Pasaje; secreto: Secreto | un
           <span className={`truncate ${usado ? "line-through" : ""}`}>{pasaje.destino}</span>
         </p>
         <button
-          onClick={() => marcar(pasaje._id, !usado, etiqueta)}
+          onClick={() => void marcar(pasaje._id, !usado, pasaje.indice)}
           className="flex h-9 shrink-0 items-center gap-1.5 rounded-lg border border-borde px-3 text-xs font-semibold"
         >
           {usado ? <IconoDeshacer /> : <IconoCheck className="size-4" />}

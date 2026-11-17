@@ -98,7 +98,7 @@ export function Alerta({
               onClick={onConfirmar}
               disabled={cargando}
               className={`h-12 rounded-xl font-semibold transition active:scale-[0.98] disabled:opacity-60 ${
-                peligro ? "bg-peligro text-white" : "bg-acento text-sobre-acento"
+                peligro ? "bg-peligro text-sobre-acento" : "bg-acento text-sobre-acento"
               }`}
             >
               {cargando ? (textoCargando ?? `${textoConfirmar}…`) : textoConfirmar}

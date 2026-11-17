@@ -1,25 +1,34 @@
 import { useMutation } from "convex/react";
-import { toast } from "sonner";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
+import { aviso } from "./avisos";
 import { mensajeError } from "./datos";
 
-/** Marca o desmarca un pasaje, con opción de deshacer en el aviso. */
+/**
+ * Marca o desmarca un pasaje y lo avisa (con "Deshacer").
+ * Devuelve true si salió bien.
+ */
 export function useMarcarUsado() {
   const marcar = useMutation(api.pasajes.marcarUsado);
 
-  return async (pasajeId: Id<"pasajes">, usado: boolean, etiqueta: string) => {
+  async function cambiar(pasajeId: Id<"pasajes">, usado: boolean, indice: number) {
     try {
       await marcar({ pasajeId, usado });
-      toast(usado ? `${etiqueta} marcado como usado` : `${etiqueta} disponible otra vez`, {
-        action: {
-          label: "Deshacer",
-          onClick: () =>
-            marcar({ pasajeId, usado: !usado }).catch((e) => toast.error(mensajeError(e))),
-        },
-      });
+      return true;
     } catch (e) {
-      toast.error(mensajeError(e));
+      aviso.error(`No se pudo actualizar el cupón ${indice}`, mensajeError(e));
+      return false;
     }
+  }
+
+  return async (pasajeId: Id<"pasajes">, usado: boolean, indice: number) => {
+    const ok = await cambiar(pasajeId, usado, indice);
+    if (ok) {
+      aviso({
+        texto: usado ? `Cupón ${indice} marcado como usado` : `Cupón ${indice} disponible otra vez`,
+        accion: { texto: "Deshacer", onClick: () => void cambiar(pasajeId, !usado, indice) },
+      });
+    }
+    return ok;
   };
 }

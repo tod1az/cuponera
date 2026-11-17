@@ -18,8 +18,7 @@ export function Inicio() {
 
   const tramos = useMemo(() => agruparPorTramo(cuponeras ?? []), [cuponeras]);
   const idsSinUsar = useMemo(
-    () =>
-      cuponeras?.flatMap((c) => c.pasajes.filter((p) => p.usadoEn === null).map((p) => p._id)),
+    () => cuponeras?.flatMap((c) => c.pasajes.filter((p) => p.usadoEn === null).map((p) => p._id)),
     [cuponeras],
   );
   const { secretos, error, reintentar } = useSecretos(idsSinUsar);
@@ -29,7 +28,7 @@ export function Inicio() {
       <header className="mb-6 flex items-center justify-between">
         <div className="flex items-center gap-2.5">
           <Logo className="size-9" />
-          <h1 className="text-xl font-bold tracking-tight">Cuponera</h1>
+          <h1 className="font-display text-3xl leading-none font-semibold">Cuponera</h1>
         </div>
         <button
           onClick={() => {
@@ -39,7 +38,12 @@ export function Inicio() {
           aria-label="Cerrar sesión"
         >
           {yo?.image ? (
-            <img src={yo.image} alt="" className="size-7 rounded-full" referrerPolicy="no-referrer" />
+            <img
+              src={yo.image}
+              alt=""
+              className="size-7 rounded-full"
+              referrerPolicy="no-referrer"
+            />
           ) : (
             <span className="grid size-7 place-items-center rounded-full bg-superficie-2 font-semibold">
               {yo?.name?.[0] ?? "?"}
@@ -72,8 +76,8 @@ export function Inicio() {
       ) : (
         <>
           <section aria-labelledby="proximos" className="flex flex-col gap-4">
-            <h2 id="proximos" className="text-sm font-semibold tracking-wide text-tenue uppercase">
-              Próximo pasaje
+            <h2 id="proximos" className="sr-only">
+              Próximo pasaje por tramo
             </h2>
             {tramos.map((t) => (
               <ProximoPasaje key={t.clave} tramo={t} secretos={secretos} />
@@ -81,7 +85,7 @@ export function Inicio() {
           </section>
 
           <section aria-labelledby="cuponeras" className="mt-10 flex flex-col gap-3">
-            <h2 id="cuponeras" className="text-sm font-semibold tracking-wide text-tenue uppercase">
+            <h2 id="cuponeras" className="font-display text-2xl font-semibold">
               Mis cuponeras
             </h2>
             {[...cuponeras].reverse().map((c) => (

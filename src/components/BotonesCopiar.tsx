@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import { toast } from "sonner";
 import { copiar, copiarSecuencial } from "../lib/clipboard";
 import type { Secreto } from "../lib/datos";
 import { useEsTactil } from "../lib/useEsTactil";
@@ -46,7 +45,7 @@ const base =
 const tam = (grande: boolean) => (grande ? "h-14 text-base" : "h-11 text-sm");
 
 function CopiarAmbos({ secreto, grande }: { secreto: Secreto | undefined; grande: boolean }) {
-  const [estado, setEstado] = useTemporal<"idle" | "copiando" | "ok" | "falta-clave">(
+  const [estado, setEstado] = useTemporal<"idle" | "copiando" | "ok" | "falta-clave" | "error">(
     "idle",
     4000,
   );
@@ -54,33 +53,22 @@ function CopiarAmbos({ secreto, grande }: { secreto: Secreto | undefined; grande
   async function onClick() {
     if (!secreto) return;
     if (estado === "falta-clave") {
-      if (await copiar(secreto.clave)) {
-        setEstado("ok");
-        toast.success("Clave copiada");
-      }
+      setEstado((await copiar(secreto.clave)) ? "ok" : "error");
       return;
     }
     setEstado("copiando", false);
     const r = await copiarSecuencial(secreto.codigo, secreto.clave);
-    if (r === "ambos") {
-      setEstado("ok");
-      toast.success("Código y clave copiados", {
-        description: "Ambos quedan en el historial del portapapeles.",
-      });
-    } else if (r === "solo-codigo") {
-      setEstado("falta-clave", false);
-      toast("Código copiado", { description: "Toca de nuevo para copiar la clave." });
-    } else {
-      setEstado("idle");
-      toast.error("No se pudo copiar al portapapeles");
-    }
+    if (r === "ambos") setEstado("ok");
+    else if (r === "solo-codigo") setEstado("falta-clave", false);
+    else setEstado("error");
   }
 
   const textos = {
     idle: "Copiar código y clave",
     copiando: "Copiando…",
     ok: "¡Copiados!",
-    "falta-clave": "Copiar clave",
+    "falta-clave": "Toca para copiar la clave",
+    error: "No se pudo copiar",
   } as const;
 
   return (
@@ -107,23 +95,24 @@ function CopiarUno({
   /** En mobile van bajo el botón principal, con menos peso visual. */
   secundario?: boolean;
 }) {
-  const [ok, setOk] = useTemporal(false);
+  const [estado, setEstado] = useTemporal<"idle" | "ok" | "error">("idle");
   return (
     <button
       onClick={async () => {
         if (!valor) return;
-        if (await copiar(valor)) {
-          setOk(true);
-          toast.success(`${etiqueta[0].toUpperCase()}${etiqueta.slice(1)} copiado`);
-        } else toast.error("No se pudo copiar al portapapeles");
+        setEstado((await copiar(valor)) ? "ok" : "error");
       }}
       disabled={!valor}
       className={`${base} ${secundario ? "h-11 text-sm" : tam(grande)} ${
         secundario ? "border border-borde bg-superficie-2" : "bg-acento text-sobre-acento"
       }`}
     >
-      {ok ? <IconoCheck className="size-4" /> : <IconoCopiar className="size-4" />}
-      {ok ? "Copiado" : `Copiar ${etiqueta}`}
+      {estado === "ok" ? <IconoCheck className="size-4" /> : <IconoCopiar className="size-4" />}
+      {estado === "ok"
+        ? "Copiado"
+        : estado === "error"
+          ? "No se pudo copiar"
+          : `Copiar ${etiqueta}`}
     </button>
   );
 }

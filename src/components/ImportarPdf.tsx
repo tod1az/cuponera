@@ -1,10 +1,11 @@
 import { useAction } from "convex/react";
 import { useEffect, useRef, useState } from "react";
-import { toast } from "sonner";
 import { api } from "../../convex/_generated/api";
+import { aviso } from "../lib/avisos";
 import { clp, mensajeError } from "../lib/datos";
 import { parsearTurbus, type CuponeraParseada } from "../lib/parseTurbus";
 import { extraerTextoPdf } from "../lib/pdfTexto";
+import { Alerta } from "./Alerta";
 import { IconoFlecha, IconoMas, IconoSubir } from "./Iconos";
 
 const esPdf = (f: File) => f.type === "application/pdf" || /\.pdf$/i.test(f.name);
@@ -20,6 +21,8 @@ export function ImportarPdf({ modo = "boton" }: { modo?: "boton" | "dropzone" })
   const [leyendo, setLeyendo] = useState(false);
   const [guardando, setGuardando] = useState(false);
   const [previa, setPrevia] = useState<CuponeraParseada | null>(null);
+  const [errorLectura, setErrorLectura] = useState<string | null>(null);
+  const [errorGuardado, setErrorGuardado] = useState<string | null>(null);
 
   function onArchivo(e: React.ChangeEvent<HTMLInputElement>) {
     const archivo = e.target.files?.[0];
@@ -29,7 +32,9 @@ export function ImportarPdf({ modo = "boton" }: { modo?: "boton" | "dropzone" })
 
   async function procesar(archivo: File) {
     if (!esPdf(archivo)) {
-      toast.error("El archivo debe ser un PDF");
+      setErrorLectura(
+        "El archivo que elegiste no es un PDF. Elige el comprobante de compra de Turbus.",
+      );
       return;
     }
     setLeyendo(true);
@@ -37,7 +42,7 @@ export function ImportarPdf({ modo = "boton" }: { modo?: "boton" | "dropzone" })
       const texto = await extraerTextoPdf(archivo);
       setPrevia(parsearTurbus(texto));
     } catch (err) {
-      toast.error("No se pudo leer el PDF", { description: mensajeError(err) });
+      setErrorLectura(mensajeError(err));
     } finally {
       setLeyendo(false);
     }
@@ -46,12 +51,16 @@ export function ImportarPdf({ modo = "boton" }: { modo?: "boton" | "dropzone" })
   async function onGuardar() {
     if (!previa) return;
     setGuardando(true);
+    setErrorGuardado(null);
     try {
       await importar(previa);
-      toast.success(`Cuponera importada: ${previa.pasajes.length} pasajes`);
+      aviso({
+        texto: "Cuponera importada",
+        detalle: `${previa.pasajes.length} pasajes listos para usar`,
+      });
       setPrevia(null);
     } catch (err) {
-      toast.error(mensajeError(err));
+      setErrorGuardado(mensajeError(err));
     } finally {
       setGuardando(false);
     }
@@ -83,10 +92,28 @@ export function ImportarPdf({ modo = "boton" }: { modo?: "boton" | "dropzone" })
         <HojaPrevia
           previa={previa}
           guardando={guardando}
-          onCancelar={() => setPrevia(null)}
+          error={errorGuardado}
+          onCancelar={() => {
+            setPrevia(null);
+            setErrorGuardado(null);
+          }}
           onGuardar={onGuardar}
         />
       )}
+
+      <Alerta
+        abierta={errorLectura !== null}
+        icono={<IconoSubir className="size-6" />}
+        titulo="No se pudo leer el PDF"
+        descripcion={<p>{errorLectura}</p>}
+        textoConfirmar="Elegir otro PDF"
+        textoCancelar="Cerrar"
+        onConfirmar={() => {
+          setErrorLectura(null);
+          input.current?.click();
+        }}
+        onCancelar={() => setErrorLectura(null)}
+      />
     </>
   );
 }
@@ -166,11 +193,13 @@ function Dropzone({
 function HojaPrevia({
   previa,
   guardando,
+  error,
   onCancelar,
   onGuardar,
 }: {
   previa: CuponeraParseada;
   guardando: boolean;
+  error: string | null;
   onCancelar: () => void;
   onGuardar: () => void;
 }) {
@@ -227,6 +256,12 @@ function HojaPrevia({
           Se guardarán {previa.pasajes.length} pasajes con código y clave cifrados. El PDF no se
           sube ni se guarda.
         </p>
+
+        {error && (
+          <p role="alert" className="mt-4 text-sm font-medium text-peligro">
+            {error}
+          </p>
+        )}
 
         <div className="mt-6 grid grid-cols-2 gap-2">
           <button
