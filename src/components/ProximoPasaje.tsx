@@ -3,7 +3,8 @@ import type { Secreto, Tramo } from "../lib/datos";
 import { fecha } from "../lib/datos";
 import { useMarcarUsado } from "../lib/useMarcarUsado";
 import { BotonesCopiar } from "./BotonesCopiar";
-import { IconoCheck } from "./Iconos";
+import { IconoBus, IconoCheck } from "./Iconos";
+import { NumeroCupon } from "./NumeroCupon";
 import { Sello, esperarTimbre } from "./Sello";
 
 type Props = { tramo: Tramo; secretos: ReadonlyMap<string, Secreto> };
@@ -40,13 +41,8 @@ export function ProximoPasaje({ tramo, secretos }: Props) {
 
   return (
     <article className="overflow-hidden rounded-3xl border border-borde bg-superficie">
-      <header className="letrero flex items-end justify-between gap-4 px-5 pt-4 pb-5">
-        <div className="min-w-0">
-          <p className="text-sm text-tenue">Desde {tramo.origen}</p>
-          <h3 className="letrero-texto font-display text-[2.5rem] leading-[0.95] font-semibold break-words">
-            {tramo.destino}
-          </h3>
-        </div>
+      <header className="letrero flex items-center justify-between gap-4 px-5 py-5">
+        <Ruta origen={tramo.origen} destino={tramo.destino} />
         <div className="shrink-0 overflow-hidden text-right">
           <p
             key={quedan}
@@ -56,7 +52,7 @@ export function ProximoPasaje({ tramo, secretos }: Props) {
           >
             {quedan}
           </p>
-          <p className="text-sm text-tenue">{quedan === 1 ? "queda" : "quedan"}</p>
+          <p className="text-sm text-tenue">{quedan === 1 ? "Queda" : "Quedan"}</p>
         </div>
       </header>
 
@@ -77,7 +73,8 @@ export function ProximoPasaje({ tramo, secretos }: Props) {
                     de {proximo.cuponera.totalPasajes}
                   </span>
                 </p>
-                <p className="mt-1 text-xs text-tenue">
+                <NumeroCupon codigo={secretos.get(proximo._id)?.codigo} className="mt-2" />
+                <p className="mt-0.5 text-xs text-tenue">
                   Cuponera del {fecha(proximo.cuponera.creadaEn)}
                 </p>
               </div>
@@ -134,5 +131,34 @@ function Asientos({ usados, total }: { usados: number; total: number }) {
         />
       ))}
     </div>
+  );
+}
+
+/**
+ * Tramo como ruta vertical de dos paradas (lenguaje de apps de transporte):
+ * origen hueco arriba, destino ámbar abajo, unidos por una línea punteada con
+ * el bus en medio. Ambos nombres al mismo tamaño: ninguno se lee como "el importante".
+ */
+function Ruta({ origen, destino }: { origen: string; destino: string }) {
+  return (
+    <h3 className="flex min-w-0 gap-3 font-display text-[1.75rem] leading-[1.05] font-semibold">
+      <span className="sr-only">
+        {origen} a {destino}
+      </span>
+      {/* Riel: los puntos quedan centrados en la primera línea de cada nombre. */}
+      <span aria-hidden className="flex w-4 shrink-0 flex-col items-center py-[0.32em]">
+        <span className="size-3 shrink-0 rounded-full border-2 border-tenue" />
+        <span className="relative my-1 flex flex-1 justify-center border-l-2 border-dashed border-borde">
+          <span className="absolute top-1/2 -translate-y-1/2 bg-letrero py-0.5 text-tenue">
+            <IconoBus className="size-4" />
+          </span>
+        </span>
+        <span className="size-3 shrink-0 rounded-full bg-acento shadow-[0_0_10px_rgb(244_176_74/0.6)]" />
+      </span>
+      <span aria-hidden className="letrero-texto flex min-w-0 flex-col gap-6 break-words">
+        <span>{origen}</span>
+        <span>{destino}</span>
+      </span>
+    </h3>
   );
 }

@@ -3,9 +3,10 @@ import { useState } from "react";
 import { api } from "../../convex/_generated/api";
 import type { Cuponera, Pasaje, Secreto } from "../lib/datos";
 import { aviso } from "../lib/avisos";
-import { clp, fecha, fechaHora, mensajeError } from "../lib/datos";
+import { fecha, fechaHora, mensajeError } from "../lib/datos";
 import { useMarcarUsado } from "../lib/useMarcarUsado";
 import { Alerta } from "./Alerta";
+import { NumeroCupon } from "./NumeroCupon";
 import { BotonesCopiar } from "./BotonesCopiar";
 import { IconoBasura, IconoCheck, IconoChevron, IconoDeshacer, IconoFlecha } from "./Iconos";
 
@@ -37,11 +38,12 @@ export function CuponeraCard({ cuponera, secretos }: Props) {
   }
 
   return (
-    <>
+    <div className="relative">
       <details className="group rounded-2xl border border-borde bg-superficie">
         <summary className="flex cursor-pointer items-center gap-3 p-4">
           <div className="min-w-0 flex-1">
-            <p className="font-display text-xl leading-tight font-semibold">
+            {/* pr-12: espacio para el botón de eliminar, que va encima de la cabecera. */}
+            <p className="pr-12 font-display text-xl leading-tight font-semibold">
               {cuponera.origen} ⇄ {cuponera.destino}
             </p>
             <p className="mt-0.5 text-sm text-tenue">
@@ -68,18 +70,16 @@ export function CuponeraCard({ cuponera, secretos }: Props) {
             <FilaPasaje key={p._id} pasaje={p} secreto={secretos.get(p._id)} />
           ))}
         </ul>
-
-        <div className="flex items-center justify-between gap-3 border-t border-borde px-4 py-3 text-sm text-tenue">
-          <span>{cuponera.montoTotal !== null && `Pagado ${clp(cuponera.montoTotal)}`}</span>
-          <button
-            onClick={() => setConfirmando(true)}
-            className="flex items-center gap-1.5 rounded-lg px-2 py-1.5 font-medium text-peligro"
-          >
-            <IconoBasura />
-            Eliminar
-          </button>
-        </div>
       </details>
+
+      {/* Fuera del <details> para verse aunque esté cerrado, alineado con la cabecera. */}
+      <button
+        onClick={() => setConfirmando(true)}
+        aria-label={`Eliminar cuponera ${cuponera.origen} ⇄ ${cuponera.destino} del ${fecha(cuponera.creadaEn)}`}
+        className="absolute top-2.5 right-11 grid size-10 place-items-center rounded-xl text-tenue transition hover:bg-peligro/10 hover:text-peligro active:scale-95"
+      >
+        <IconoBasura className="size-5" />
+      </button>
 
       <Alerta
         abierta={confirmando}
@@ -109,7 +109,7 @@ export function CuponeraCard({ cuponera, secretos }: Props) {
         onConfirmar={onEliminar}
         onCancelar={() => setConfirmando(false)}
       />
-    </>
+    </div>
   );
 }
 
@@ -139,7 +139,8 @@ function FilaPasaje({ pasaje, secreto }: { pasaje: Pasaje; secreto: Secreto | un
       {usado ? (
         <p className="mt-1 pl-7.5 text-xs text-tenue">Usado el {fechaHora(pasaje.usadoEn!)}</p>
       ) : (
-        <div className="mt-3 pl-7.5">
+        <div className="mt-2 pl-7.5">
+          <NumeroCupon codigo={secreto?.codigo} className="mb-2.5" />
           <BotonesCopiar secreto={secreto} />
         </div>
       )}

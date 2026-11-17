@@ -34,6 +34,15 @@ export const IconoMas = ({ className = "size-6" }: P) => (
   </svg>
 );
 
+/** Bus visto de frente. Trazo del ícono "bus-front" de Lucide (ISC). */
+export const IconoBus = ({ className = "size-5" }: P) => (
+  <svg {...svg} className={className}>
+    <path d="M4 6 2 7M10 6h4M22 7l-2-1" />
+    <rect width="16" height="16" x="4" y="3" rx="2" />
+    <path d="M4 11h16M8 15h.01M16 15h.01M6 19v2M18 21v-2" />
+  </svg>
+);
+
 export const IconoSubir = ({ className = "size-7" }: P) => (
   <svg {...svg} className={className}>
     <path d="M12 15V3M7 8l5-5 5 5" />
